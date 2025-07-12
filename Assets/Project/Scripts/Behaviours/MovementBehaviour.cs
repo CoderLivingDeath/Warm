@@ -47,8 +47,6 @@ public class MovementBehaviour : MonoBehaviour
 
     private async UniTask DirectionUpdateCoroutine(CancellationToken token)
     {
-        float lambda = 8f;               // Коэффициент сглаживания
-        float oppositeThreshold = 170f;  // Порог (в градусах), при котором сглаживание отключается
 
         while (!token.IsCancellationRequested)
         {
@@ -66,7 +64,7 @@ public class MovementBehaviour : MonoBehaviour
             }
             else
             {
-                float t = 1f - Mathf.Exp(-lambda * Time.fixedDeltaTime);
+                float t = 1f - Mathf.Exp(-_directionSmoothness * Time.fixedDeltaTime);
                 _directionAngle = Mathf.LerpAngle(_directionAngle, targetAngle, t);
             }
 
