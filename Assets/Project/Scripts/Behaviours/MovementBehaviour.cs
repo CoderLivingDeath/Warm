@@ -97,7 +97,7 @@ public class MovementBehaviour : MonoBehaviour
         {
             int prevCategory = GetVelocityCategory(NormalizedVelocity);
             bool prevIsMoving = IsMoving();
-            float prevDirectionAngle = _directionAngle;
+            Vector2 prevInputMoveVector = _inputMoveVector;
 
             await UniTask.WaitUntil(() =>
             {
@@ -433,7 +433,6 @@ public class MovementBehaviour : MonoBehaviour
 
     private void _stateMachine_OnEnterIdle()
     {
-        StopDirectionMonitoringTask();
         StopBrakingTask();
         StopAccelerationTask();
         StopMovementTask();
@@ -502,6 +501,7 @@ public class MovementBehaviour : MonoBehaviour
         _stateMachine.StateChanged += _stateMachine_StateChanged;
 
         StartStateMonitoringTask();
+        StartDirectionMonitoringTask();
     }
 
 
