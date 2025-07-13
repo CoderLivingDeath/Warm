@@ -35,7 +35,6 @@ public class MovementBehaviour : MonoBehaviour
         Mathf.Sin(_directionAngle * Mathf.Deg2Rad)
     );
 
-
     [Range(0, 20)]
     public float _directionSmoothness = 5f;
     [Range(0, 180)]
@@ -98,6 +97,7 @@ public class MovementBehaviour : MonoBehaviour
         {
             int prevCategory = GetVelocityCategory(NormalizedVelocity);
             bool prevIsMoving = IsMoving();
+            float prevDirectionAngle = _directionAngle;
 
             await UniTask.WaitUntil(() =>
             {
@@ -285,6 +285,7 @@ public class MovementBehaviour : MonoBehaviour
         {
             StopStateMonitoringTask();
         }
+
         _stateMonitoringCTS = new CancellationTokenSource();
         _stateMonitoringTask = StateMonitoringTask(_stateMonitoringCTS.Token);
     }
