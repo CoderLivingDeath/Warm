@@ -1,24 +1,41 @@
 using Cysharp.Threading.Tasks;
-using Stateless;
 using System;
 using System.Threading;
+using System.Threading.Tasks;
 using UnityEngine;
+using Warm.Project.Scripts.Movement;
 
 [RequireComponent(typeof(Rigidbody2D))]
 public class MovementBehaviour : MonoBehaviour
 {
-    public float _velocity;
-    public float _maxVelocity = 0.25f;
-    public float _normalizedVelocity;
+    public MovementState CurrentState => _stateMachine.CurrentState;
+    [SerializeField]
+    private MovementState _currentState;
 
-    public float _directionAngle = 0f; // Угол в градусах, 0 — вправо
+    public Vector2 Position => _rigidbody.position;
+
+    public float Velocity => _velocity;
+    [SerializeField]
+    private float _velocity;
+
+    public float MaxVelocity => _maxVelocity;
+    [SerializeField]
+    private float _maxVelocity = 0.25f;
+
+    public float NormalizedVelocity => _normalizedVelocity;
+    [SerializeField]
+    private float _normalizedVelocity;
+
+    public float DirectionAngle => _directionAngle;
+    [SerializeField]
+    private float _directionAngle = 0f;
 
     public Vector2 DirectionVector => new Vector2(
         Mathf.Cos(_directionAngle * Mathf.Deg2Rad),
         Mathf.Sin(_directionAngle * Mathf.Deg2Rad)
     );
 
-    public Vector2 _inputMoveVector;
+
     [Range(0, 20)]
     public float _directionSmoothness = 5f;
     [Range(0, 180)]
@@ -30,10 +47,24 @@ public class MovementBehaviour : MonoBehaviour
     public AnimationCurve _brakingCurve = AnimationCurve.EaseInOut(0, 0, 1, 1);
     public float BrakingDuration = 0.25f;
 
+    private float _currentDuration;
+
     public PlayerLoopTiming Timing = PlayerLoopTiming.FixedUpdate;
+
+    // Events
+
+    public event Action PositionChanged;
+
+    public event Action<MovementState> StateChanged;
 
     private MovementStateMachine _stateMachine = new();
 
+    private Rigidbody2D _rigidbody;
+
+    [SerializeField]
+    private Vector2 _inputMoveVector;
+
+    // Tasks
     private CancellationTokenSource _velocityCTS;
     private UniTask _velocityTask = UniTask.CompletedTask;
 
@@ -43,11 +74,53 @@ public class MovementBehaviour : MonoBehaviour
     private CancellationTokenSource _directionCts;
     private UniTask _directionTask = UniTask.CompletedTask;
 
-    private Rigidbody2D _rigidbody;
+    private CancellationTokenSource _stateMonitoringCTS;
+    private UniTask _stateMonitoringTask = UniTask.CompletedTask;
 
-    private async UniTask DirectionUpdateCoroutine(CancellationToken token)
+    private CancellationTokenSource _AccelerationCTS;
+    private UniTask _accelerationTask = UniTask.CompletedTask;
+
+    private CancellationTokenSource _brakingCTS;
+    private UniTask _brakingTask = UniTask.CompletedTask;
+
+    public async UniTask StateMonitoringTask(CancellationToken cancellationToken)
     {
+        int GetVelocityCategory(float velocity)
+        {
+            if (velocity == 0f)
+                return 0;
+            if (velocity == 1f)
+                return 2;
+            return 1; // velocity >0 и <1
+        }
 
+        while (!cancellationToken.IsCancellationRequested)
+        {
+            int prevCategory = GetVelocityCategory(NormalizedVelocity);
+            bool prevIsMoving = IsMoving();
+
+            await UniTask.WaitUntil(() =>
+            {
+                int currentCategory = GetVelocityCategory(NormalizedVelocity);
+                bool currentIsMoving = IsMoving();
+
+                return currentCategory != prevCategory || currentIsMoving != prevIsMoving;
+
+            }, Timing, cancellationToken);
+
+            _stateMachine.UpdateState(_normalizedVelocity, IsMoving());
+
+            _currentState = CurrentState;
+            prevCategory = GetVelocityCategory(NormalizedVelocity);
+            prevIsMoving = IsMoving();
+
+            await UniTask.Yield(Timing, cancellationToken);
+        }
+    }
+
+    private async UniTask DirectionUpdateTask(CancellationToken token)
+    {
+        _directionAngle = _inputMoveVector == Vector2.zero ? 0 : Mathf.Atan2(_inputMoveVector.y, _inputMoveVector.x) * Mathf.Rad2Deg;
         while (!token.IsCancellationRequested)
         {
             float targetAngle = _directionAngle;
@@ -68,19 +141,20 @@ public class MovementBehaviour : MonoBehaviour
                 _directionAngle = Mathf.LerpAngle(_directionAngle, targetAngle, t);
             }
 
-            // Ограничение угла от 0 до 360
             _directionAngle = Mathf.Repeat(_directionAngle, 360f);
 
             await UniTask.Yield(Timing, token);
         }
     }
 
-    private async UniTask MovementCoroutine(CancellationToken cancellationToken)
+    private async UniTask MovementTask(CancellationToken cancellationToken)
     {
         while (!cancellationToken.IsCancellationRequested)
         {
             Vector2 offset = DirectionVector * _velocity;
             _rigidbody.MovePosition(_rigidbody.position + offset);
+
+            PositionChanged?.Invoke();
 
             await UniTask.Yield(Timing, cancellationToken);
         }
@@ -93,7 +167,8 @@ public class MovementBehaviour : MonoBehaviour
     /// При торможении: velocity падает от maxVelocity до 0.
     /// normalizedVelocity всегда в диапазоне [0;1].
     /// </summary>
-    public async UniTask VelocityCalculatingCorutin(bool accelerating, CancellationToken cancellationToken)
+    [Obsolete]
+    public async UniTask VelocityCalculatingTask(bool accelerating, CancellationToken cancellationToken)
     {
         AnimationCurve curve = accelerating ? _accelerationCurve : _brakingCurve;
         float totalDuration = accelerating ? _accelerationDuration : BrakingDuration;
@@ -102,7 +177,7 @@ public class MovementBehaviour : MonoBehaviour
         while (!cancellationToken.IsCancellationRequested)
         {
             elapsed += Time.deltaTime;
-            float t = Mathf.Clamp01(elapsed / totalDuration); // t теперь всегда от 0 до 1
+            float t = Mathf.Clamp01(elapsed / totalDuration);
 
             float curveValue = curve.Evaluate(t);
             _normalizedVelocity = accelerating ? curveValue : 1f - curveValue;
@@ -113,7 +188,144 @@ public class MovementBehaviour : MonoBehaviour
         await UniTask.CompletedTask;
     }
 
-    public void StopDirectionMonitoring()
+    /// <summary>
+    /// Асинхронная корутина для плавного ускорения.
+    /// Velocity растет от 0 до maxVelocity.
+    /// normalizedVelocity всегда в диапазоне [0;1].
+    /// </summary>
+    public async UniTask AccelerationTask(CancellationToken cancellationToken)
+    {
+        // Ускоряемся с нуля
+        while (_currentDuration < 1f && !cancellationToken.IsCancellationRequested)
+        {
+            _currentDuration += Time.deltaTime / _accelerationDuration;
+            _currentDuration = Mathf.Clamp01(_currentDuration);
+
+            float curveValue = _accelerationCurve.Evaluate(_currentDuration);
+            _normalizedVelocity = curveValue;
+            _velocity = _normalizedVelocity * _maxVelocity;
+
+            await UniTask.Yield(Timing, cancellationToken);
+        }
+        await UniTask.CompletedTask;
+    }
+
+    /// <summary>
+    /// Асинхронная корутина для плавного торможения.
+    /// Velocity падает от maxVelocity до 0.
+    /// normalizedVelocity всегда в диапазоне [0;1].
+    /// </summary>
+    public async UniTask BrakingTask(CancellationToken cancellationToken)
+    {
+        while (_currentDuration > 0f && !cancellationToken.IsCancellationRequested)
+        {
+            _currentDuration -= Time.deltaTime / BrakingDuration;
+            _currentDuration = Mathf.Clamp01(_currentDuration);
+
+            float curveValue = _brakingCurve.Evaluate(_currentDuration);
+            _normalizedVelocity = curveValue;
+            _velocity = _normalizedVelocity * _maxVelocity;
+
+            await UniTask.Yield(Timing, cancellationToken);
+        }
+        _currentDuration = 0;
+        await UniTask.CompletedTask;
+    }
+
+    public void StartAccelerationTask(bool restart = true)
+    {
+        if (_AccelerationCTS != null && !restart)
+            return;
+
+        if (_AccelerationCTS != null)
+            StopAccelerationTask();
+
+        _AccelerationCTS = new CancellationTokenSource();
+        _accelerationTask = AccelerationTask(_AccelerationCTS.Token);
+    }
+
+    public void StopAccelerationTask()
+    {
+        if (_AccelerationCTS != null)
+        {
+            _AccelerationCTS.Cancel();
+            _AccelerationCTS.Dispose();
+            _AccelerationCTS = null;
+        }
+    }
+
+    public void StartBrakingTask(bool restart = true)
+    {
+        if (_brakingCTS != null && !restart)
+            return;
+
+        if (_brakingCTS != null)
+            StopBrakingTask();
+
+        _brakingCTS = new CancellationTokenSource();
+        _brakingTask = BrakingTask(_brakingCTS.Token);
+    }
+
+    public void StopBrakingTask()
+    {
+        if (_brakingCTS != null)
+        {
+            _brakingCTS.Cancel();
+            _brakingCTS.Dispose();
+            _brakingCTS = null;
+        }
+    }
+
+    public void StartStateMonitoringTask(bool restart = true)
+    {
+        if (_stateMonitoringCTS != null && !restart)
+            return;
+
+        if (_stateMonitoringCTS != null)
+        {
+            StopStateMonitoringTask();
+        }
+        _stateMonitoringCTS = new CancellationTokenSource();
+        _stateMonitoringTask = StateMonitoringTask(_stateMonitoringCTS.Token);
+    }
+
+    public void StopStateMonitoringTask()
+    {
+        if (_stateMonitoringCTS != null)
+        {
+            _stateMonitoringCTS.Cancel();
+            //try
+            //{
+            //    await _stateMonitoringTask;
+            //}
+            //catch (OperationCanceledException)
+            //{
+            //    Debug.Log("State Monitoring Canceled");
+            //}
+            //catch (Exception ex)
+            //{
+            //    Debug.LogError(ex);
+            //}
+            _stateMonitoringCTS.Dispose();
+            _stateMonitoringCTS = null;
+        }
+    }
+
+    public void StartDirectionMonitoringTask
+    (bool restart = true)
+    {
+        if (_directionCts != null && !restart)
+            return; // Уже запущено и не требуется перезапуск
+
+        if (_directionCts != null)
+        {
+            StopDirectionMonitoringTask();
+        }
+        _directionCts = new CancellationTokenSource();
+        _directionTask = DirectionUpdateTask(_directionCts.Token);
+    }
+
+    public void StopDirectionMonitoringTask()
     {
 
         if (_directionCts != null)
@@ -136,7 +348,22 @@ public class MovementBehaviour : MonoBehaviour
         }
     }
 
-    public void StopVelocityCoroutine()
+    [Obsolete]
+    public void StartVelocityTask(bool accelerating, bool restart = true)
+    {
+        if (_velocityCTS != null && !restart)
+            return; // Уже запущено и не требуется перезапуск
+
+        if (_velocityCTS != null)
+        {
+            StopVelocityTask();
+        }
+        _velocityCTS = new CancellationTokenSource();
+        _velocityTask = VelocityCalculatingTask(accelerating, _velocityCTS.Token);
+    }
+
+    [Obsolete]
+    public void StopVelocityTask()
     {
         if (_velocityCTS != null)
         {
@@ -158,7 +385,20 @@ public class MovementBehaviour : MonoBehaviour
         }
     }
 
-    public void StopMovementCoroutine()
+    public void StartMovementTask(bool restart = true)
+    {
+        if (_movementCTS != null && !restart)
+            return; // Уже запущено и не требуется перезапуск
+
+        if (_movementCTS != null)
+        {
+            StopMovementTask();
+        }
+        _movementCTS = new CancellationTokenSource();
+        _movementTask = MovementTask(_movementCTS.Token);
+    }
+
+    public void StopMovementTask()
     {
         if (_movementCTS != null)
         {
@@ -180,46 +420,6 @@ public class MovementBehaviour : MonoBehaviour
         }
     }
 
-    public void StartDirectionMonitoring
-        (bool restart = true)
-    {
-        if (_directionCts != null && !restart)
-            return; // Уже запущено и не требуется перезапуск
-
-        if (_directionCts != null)
-        {
-            StopDirectionMonitoring();
-        }
-        _directionCts = new CancellationTokenSource();
-        _directionTask = DirectionUpdateCoroutine(_directionCts.Token);
-    }
-
-    public void StartVelocityCoroutineAsync(bool accelerating, bool restart = true)
-    {
-        if (_velocityCTS != null && !restart)
-            return; // Уже запущено и не требуется перезапуск
-
-        if (_velocityCTS != null)
-        {
-            StopVelocityCoroutine();
-        }
-        _velocityCTS = new CancellationTokenSource();
-        _velocityTask = VelocityCalculatingCorutin(accelerating, _velocityCTS.Token);
-    }
-
-    public void StartMovementCoroutineAsync(bool restart = true)
-    {
-        if (_movementCTS != null && !restart)
-            return; // Уже запущено и не требуется перезапуск
-
-        if (_movementCTS != null)
-        {
-           StopMovementCoroutine();
-        }
-        _movementCTS = new CancellationTokenSource();
-        _movementTask = MovementCoroutine(_movementCTS.Token);
-    }
-
     public bool IsMoving()
     {
         return !_inputMoveVector.Equals(Vector2.zero);
@@ -228,32 +428,45 @@ public class MovementBehaviour : MonoBehaviour
     public void Move(Vector2 direction)
     {
         _inputMoveVector = direction;
-
-        _stateMachine.UpdateState(_normalizedVelocity, IsMoving());
-    }
-
-    private void _stateMachine_OnEnterBraking()
-    {
-        StartVelocityCoroutineAsync(false);
-    }
-
-    private void _stateMachine_OnEnterPerformed()
-    {
-        StopVelocityCoroutine();
-    }
-
-    private void _stateMachine_OnEnterAcceleration()
-    {
-        StartDirectionMonitoring();
-        StartVelocityCoroutineAsync(true);
-        StartMovementCoroutineAsync();
     }
 
     private void _stateMachine_OnEnterIdle()
     {
-        StopDirectionMonitoring();
-        StopVelocityCoroutine();
-        StopMovementCoroutine();
+        StopDirectionMonitoringTask();
+        StopBrakingTask();
+        StopAccelerationTask();
+        StopMovementTask();
+    }
+
+    private void _stateMachine_OnEnterAcceleration()
+    {
+        StopBrakingTask();
+
+        StartDirectionMonitoringTask();
+        StartAccelerationTask();
+
+        StartMovementTask();
+
+    }
+
+    private void _stateMachine_OnEnterPerformed()
+    {
+        StopBrakingTask();
+        StopAccelerationTask();
+
+    }
+
+    private void _stateMachine_OnEnterBraking()
+    {
+
+        StopAccelerationTask();
+        StartBrakingTask();
+    }
+
+
+    private void _stateMachine_StateChanged(MovementState obj)
+    {
+        StateChanged?.Invoke(obj);
     }
 
     #region Unity Methods
@@ -262,20 +475,48 @@ public class MovementBehaviour : MonoBehaviour
         _rigidbody = GetComponent<Rigidbody2D>();
     }
 
+    private void Start()
+    {
+        StateChanged?.Invoke(MovementState.idle);
+    }
+
+    private void Update()
+    {
+    }
+
+    private void FixedUpdate()
+    {
+        Debug.Log($"CurrentState : {CurrentState}, Velocity : {Velocity}, NormilizrdVelocity : {NormalizedVelocity}," +
+            $" \n tasks \n StateMonitoring : {_stateMonitoringTask.Status}, DirectionMonitoring : {_directionTask.Status}" +
+            $"MovementTask : {_movementTask.Status}, AccelerationTask : {_accelerationTask.Status}, BrakingTask : {_brakingTask.Status}");
+    }
+
     private void OnEnable()
     {
         _stateMachine.OnEnterIdle += _stateMachine_OnEnterIdle;
         _stateMachine.OnEnterAcceleration += _stateMachine_OnEnterAcceleration;
         _stateMachine.OnEnterPerformed += _stateMachine_OnEnterPerformed;
         _stateMachine.OnEnterBraking += _stateMachine_OnEnterBraking;
+
+        _stateMachine.StateChanged += _stateMachine_StateChanged;
+
+        StartStateMonitoringTask();
     }
+
 
     private void OnDisable()
     {
+
         _stateMachine.OnEnterIdle -= _stateMachine_OnEnterIdle;
         _stateMachine.OnEnterAcceleration -= _stateMachine_OnEnterAcceleration;
         _stateMachine.OnEnterPerformed -= _stateMachine_OnEnterPerformed;
         _stateMachine.OnEnterBraking -= _stateMachine_OnEnterBraking;
+
+        _stateMachine.StateChanged -= _stateMachine_StateChanged;
+
+        StopStateMonitoringTask();
+        StopDirectionMonitoringTask();
+        StopMovementTask();
     }
 
     private void OnDrawGizmos()
@@ -287,145 +528,4 @@ public class MovementBehaviour : MonoBehaviour
         Gizmos.DrawLine(transform.position, (Vector2)transform.position + _inputMoveVector * 2);
     }
     #endregion
-}
-
-public class MovementStateMachine
-{
-    public enum State
-    {
-        idle, acceleration, performed, braking
-    }
-
-    public enum Trigger
-    {
-        idle, acceleration, performed, braking
-    }
-
-    public State CurrentState => _stateMachine.State;
-
-    public event Action<State> StateChanged;
-
-    public event Action OnEnterIdle;
-    public event Action OnEnterAcceleration;
-    public event Action OnEnterPerformed;
-    public event Action OnEnterBraking;
-
-    private StateMachine<State, Trigger> _stateMachine;
-
-    public MovementStateMachine()
-    {
-        ConfigureStateMachine();
-    }
-
-    private void OnIdleEntry()
-    {
-        OnStateEnter(State.idle);
-    }
-
-    private void OnAccelerationEntry()
-    {
-        OnStateEnter(State.acceleration);
-    }
-
-    private void OnPerformedEntry()
-    {
-        OnStateEnter(State.performed);
-    }
-
-    private void OnBrakingEntry()
-    {
-        OnStateEnter(State.braking);
-    }
-
-    private void OnStateEnter(State state)
-    {
-        switch (state)
-        {
-            case State.idle:
-                OnEnterIdle?.Invoke();
-                break;
-            case State.acceleration:
-                OnEnterAcceleration?.Invoke();
-                break;
-            case State.performed:
-                OnEnterPerformed?.Invoke();
-                break;
-            case State.braking:
-                OnEnterBraking?.Invoke();
-                break;
-        }
-
-        StateChanged?.Invoke(state);
-    }
-
-    private void ConfigureStateMachine()
-    {
-        _stateMachine = new(State.idle);
-
-        _stateMachine.Configure(State.idle)
-            .Permit(Trigger.acceleration, State.acceleration)
-            .OnEntry(OnIdleEntry);
-
-        _stateMachine.Configure(State.acceleration)
-            .Permit(Trigger.idle, State.idle)
-            .Permit(Trigger.performed, State.performed).
-            Permit(Trigger.braking, State.braking)
-            .OnEntry(OnAccelerationEntry);
-
-        _stateMachine.Configure(State.performed)
-            .Permit(Trigger.braking, State.braking)
-            .OnEntry(OnPerformedEntry);
-
-        _stateMachine.Configure(State.braking)
-            .Permit(Trigger.idle, State.idle)
-            .Permit(Trigger.acceleration, State.acceleration)
-            .OnEntry(OnBrakingEntry);
-    }
-
-    public void FireTrigger(Trigger trigger)
-    {
-        if (_stateMachine.CanFire(trigger)) _stateMachine.Fire(trigger);
-    }
-
-    public void FireIdle()
-    {
-        FireTrigger(Trigger.idle);
-    }
-
-    public void FireAcceleration()
-    {
-        FireTrigger(Trigger.acceleration);
-    }
-
-    public void FirePerformed()
-    {
-        FireTrigger(Trigger.performed);
-    }
-
-    public void FireBraking()
-    {
-        FireTrigger(Trigger.braking);
-    }
-
-    public void UpdateState(float normalizedVelocity, bool isMoving)
-    {
-        switch (normalizedVelocity, isMoving)
-        {
-            case (0, false):
-                FireIdle();
-                break;
-            case ( > 0, false):
-                FireBraking();
-                break;
-            case (0, true):
-                FireAcceleration();
-                break;
-            case ( < 1, true):
-                FireAcceleration();
-                break;
-            case (1, true):
-                FirePerformed();
-                break;
-        }
-    }
 }

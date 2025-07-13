@@ -19,11 +19,6 @@ public class InputService : IDisposable
         _inputActions = inputActions ?? throw new ArgumentNullException(nameof(inputActions));
 
         Enable();
-
-        foreach (var subscriber in _subscribers)
-        {
-            Debug.Log(subscriber.Key);
-        }
     }
 
     public void Enable()

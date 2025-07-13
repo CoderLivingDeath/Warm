@@ -1,28 +1,31 @@
 fileFormatVersion: 2
-guid: 6af93b0905c510b4e86cb94e65e4e066
+guid: 4810c3a230eac154784d56d0ef28f6ac
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: 4617977745333539545
-    second: RobotAnim-sheet_0
+      213: -7094311772540364587
+    second: Robot-sheet_0
   - first:
-      213: -7785744956003756748
-    second: RobotAnim-sheet_1
+      213: 7546953133718058394
+    second: Robot-sheet_1
   - first:
-      213: -8491175768237569283
-    second: RobotAnim-sheet_2
+      213: 6207655855728960928
+    second: Robot-sheet_2
   - first:
-      213: 7973534608758718663
-    second: RobotAnim-sheet_3
+      213: 7438999077057350414
+    second: Robot-sheet_3
   - first:
-      213: 835643350327150818
-    second: RobotAnim-sheet_4
+      213: 3822926840786660939
+    second: Robot-sheet_4
   - first:
-      213: -590011485366724830
-    second: RobotAnim-sheet_5
+      213: -3789186172137677870
+    second: Robot-sheet_5
   - first:
-      213: -4962058042921878961
-    second: RobotAnim-sheet_6
+      213: -159801889168093959
+    second: Robot-sheet_6
+  - first:
+      213: -4622120635412626223
+    second: Robot-sheet_7
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -55,7 +58,7 @@ TextureImporter:
   maxTextureSize: 2048
   textureSettings:
     serializedVersion: 2
-    filterMode: 1
+    filterMode: 0
     aniso: 1
     mipBias: 0
     wrapU: 1
@@ -69,7 +72,7 @@ TextureImporter:
   spriteMeshType: 1
   alignment: 0
   spritePivot: {x: 0.5, y: 0.5}
-  spritePixelsToUnits: 100
+  spritePixelsToUnits: 16
   spriteBorder: {x: 0, y: 0, z: 0, w: 0}
   spriteGenerateFallbackPhysicsShape: 1
   alphaUsage: 1
@@ -131,155 +134,177 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: RobotAnim-sheet_0
+      name: Robot-sheet_0
       rect:
         serializedVersion: 2
-        x: 2
+        x: 0
         y: 0
-        width: 10
-        height: 16
-      alignment: 0
-      pivot: {x: 0, y: 0}
+        width: 18
+        height: 18
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 9d2d343da4a561040800000000000000
-      internalID: 4617977745333539545
+      spriteID: 5d81cd7b701fb8d90800000000000000
+      internalID: -7094311772540364587
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: RobotAnim-sheet_1
+      name: Robot-sheet_1
       rect:
         serializedVersion: 2
         x: 18
         y: 0
-        width: 11
-        height: 16
-      alignment: 0
-      pivot: {x: 0, y: 0}
+        width: 18
+        height: 18
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 4355b91963a73f390800000000000000
-      internalID: -7785744956003756748
+      spriteID: a9539cfb3e92cb860800000000000000
+      internalID: 7546953133718058394
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: RobotAnim-sheet_2
+      name: Robot-sheet_2
       rect:
         serializedVersion: 2
-        x: 34
+        x: 36
         y: 0
-        width: 11
-        height: 16
-      alignment: 0
-      pivot: {x: 0, y: 0}
+        width: 18
+        height: 18
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: dfa8bc080a8492a80800000000000000
-      internalID: -8491175768237569283
+      spriteID: 0a529987c16062650800000000000000
+      internalID: 6207655855728960928
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: RobotAnim-sheet_3
+      name: Robot-sheet_3
       rect:
         serializedVersion: 2
-        x: 50
+        x: 54
         y: 0
-        width: 11
-        height: 16
-      alignment: 0
-      pivot: {x: 0, y: 0}
+        width: 18
+        height: 18
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 7c0c8572b7fa7ae60800000000000000
-      internalID: 7973534608758718663
+      spriteID: e0b46704f32ac3760800000000000000
+      internalID: 7438999077057350414
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: RobotAnim-sheet_4
+      name: Robot-sheet_4
       rect:
         serializedVersion: 2
-        x: 66
+        x: 72
         y: 0
-        width: 10
-        height: 16
-      alignment: 0
-      pivot: {x: 0, y: 0}
+        width: 18
+        height: 18
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 2e8ca2f133dc89b00800000000000000
-      internalID: 835643350327150818
+      spriteID: b4e256bf4b3cd0530800000000000000
+      internalID: 3822926840786660939
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: RobotAnim-sheet_5
+      name: Robot-sheet_5
       rect:
         serializedVersion: 2
-        x: 82
+        x: 90
         y: 0
-        width: 10
-        height: 16
-      alignment: 0
-      pivot: {x: 0, y: 0}
+        width: 18
+        height: 18
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 227d0591eabdfc7f0800000000000000
-      internalID: -590011485366724830
+      spriteID: 2db59ed904b1a6bc0800000000000000
+      internalID: -3789186172137677870
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: RobotAnim-sheet_6
+      name: Robot-sheet_6
       rect:
         serializedVersion: 2
-        x: 98
+        x: 108
         y: 0
-        width: 10
-        height: 16
-      alignment: 0
-      pivot: {x: 0, y: 0}
+        width: 18
+        height: 18
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: f4a75c4008a332bb0800000000000000
-      internalID: -4962058042921878961
+      spriteID: 9fc03b9470548cdf0800000000000000
+      internalID: -159801889168093959
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Robot-sheet_7
+      rect:
+        serializedVersion: 2
+        x: 126
+        y: 0
+        width: 18
+        height: 18
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 1d44a3965cdeadfb0800000000000000
+      internalID: -4622120635412626223
       vertices: []
       indices: 
       edges: []
@@ -288,7 +313,7 @@ TextureImporter:
     customData: 
     physicsShape: []
     bones: []
-    spriteID: 
+    spriteID: 990fb1cde2cc95e45895199657cdeafa
     internalID: 0
     vertices: []
     indices: 
@@ -296,15 +321,18 @@ TextureImporter:
     weights: []
     secondaryTextures: []
     spriteCustomMetadata:
-      entries: []
+      entries:
+      - key: SpriteEditor.SliceSettings
+        value: '{"sliceOnImport":false,"gridCellCount":{"x":1.0,"y":1.0},"gridSpriteSize":{"x":18.0,"y":18.0},"gridSpriteOffset":{"x":0.0,"y":0.0},"gridSpritePadding":{"x":0.0,"y":0.0},"pivot":{"x":0.5,"y":0.0},"autoSlicingMethod":0,"spriteAlignment":7,"slicingType":1,"keepEmptyRects":false,"isAlternate":false}'
     nameFileIdTable:
-      RobotAnim-sheet_0: 4617977745333539545
-      RobotAnim-sheet_1: -7785744956003756748
-      RobotAnim-sheet_2: -8491175768237569283
-      RobotAnim-sheet_3: 7973534608758718663
-      RobotAnim-sheet_4: 835643350327150818
-      RobotAnim-sheet_5: -590011485366724830
-      RobotAnim-sheet_6: -4962058042921878961
+      Robot-sheet_0: -7094311772540364587
+      Robot-sheet_1: 7546953133718058394
+      Robot-sheet_2: 6207655855728960928
+      Robot-sheet_3: 7438999077057350414
+      Robot-sheet_4: 3822926840786660939
+      Robot-sheet_5: -3789186172137677870
+      Robot-sheet_6: -159801889168093959
+      Robot-sheet_7: -4622120635412626223
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
