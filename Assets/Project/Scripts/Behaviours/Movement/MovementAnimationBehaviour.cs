@@ -1,7 +1,6 @@
 using System;
 using System.Linq;
 using UnityEngine;
-using UnityEngine.Animations;
 using Warm.Project.Scripts.Movement;
 
 public class MovementAnimationBehaviour : MonoBehaviour

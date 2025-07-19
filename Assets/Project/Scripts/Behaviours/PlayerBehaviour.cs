@@ -2,10 +2,11 @@
 using Warm.Project.Infrastructure.EventBus;
 using Zenject;
 
-[RequireComponent(typeof(MovementBehaviour))]
-public class PlayerBehaviour : MonoBehaviour, IPlayerMovementHandler
+[RequireComponent(typeof(MovementBehaviour), typeof(InteractionBehaviour))]
+public class PlayerBehaviour : MonoBehaviour, IPlayerMovementHandler, IPlayerInteractionHandler
 {
     private MovementBehaviour _movementBehaviour;
+    private InteractionBehaviour _interactionBehaviour;
 
     [Inject]
     private EventBus _eventBus;
@@ -16,6 +17,10 @@ public class PlayerBehaviour : MonoBehaviour, IPlayerMovementHandler
     {
         _movementBehaviour.Move(direction);
     }
+    public void HandleInteraction()
+    {
+        _interactionBehaviour.Interact();
+    }
 
     #endregion
 
@@ -24,6 +29,7 @@ public class PlayerBehaviour : MonoBehaviour, IPlayerMovementHandler
     void Start()
     {
         _movementBehaviour = GetComponent<MovementBehaviour>();
+        _interactionBehaviour = GetComponent<InteractionBehaviour>();
     }
 
     private void OnEnable()
@@ -35,5 +41,6 @@ public class PlayerBehaviour : MonoBehaviour, IPlayerMovementHandler
     {
         _eventBus.Unsubscribe(this);
     }
+
     #endregion
 }

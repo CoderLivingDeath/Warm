@@ -1,7 +1,6 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using UnityEngine;
 using UnityEngine.InputSystem;
 using Warm.Project.Infrastructure.EventBus;
 public class InputService : IDisposable
@@ -235,7 +234,6 @@ public class InputSubscribersContainer : IEnumerable<KeyValuePair<string, InputS
         _subscribers[formatedKey] = subscriber;
     }
 
-
     /// <summary>
     /// Добавить одного подписчика.
     /// </summary>
@@ -246,8 +244,6 @@ public class InputSubscribersContainer : IEnumerable<KeyValuePair<string, InputS
 
         if (_subscribers.ContainsKey(formatedKey)) throw new InvalidOperationException($"such a key already exists: {formatedKey}");
         if (callback == null) throw new ArgumentNullException(nameof(callback));
-
-        Unsubscribe(formatedKey); // Удаляет и Disposes если уже есть
 
         var subscriber = new InputSubscriber(action, callback, callType);
         _subscribers.Add(formatedKey, subscriber);

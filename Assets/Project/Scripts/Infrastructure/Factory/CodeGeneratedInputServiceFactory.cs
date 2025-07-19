@@ -1,7 +1,7 @@
 using System;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using Warm.Project.Infrastructure.EventBus;
 using Zenject;
 
 namespace Warm.Project.Infrastructure.Factory
@@ -9,6 +9,7 @@ namespace Warm.Project.Infrastructure.Factory
     public class CodeGeneratedInputServiceFactory : IFactory<InputService>
     {
         public const string INPUT_KEY_MOVEMENT = "movement";
+        public const string INPUT_KEY_INTERACT = "interact";
 
         private DiContainer _container;
 
@@ -22,9 +23,9 @@ namespace Warm.Project.Infrastructure.Factory
             EventBus.EventBus eventBus = _container.Resolve<EventBus.EventBus>();
             InputSystem_Actions actions = _container.Resolve<InputSystem_Actions>();
 
-            InputSubscribersContainer subscribers = CreateSubscribers(actions, eventBus);
+            InputSubscribersContainer subscribersContainer = CreateSubscribers(actions, eventBus);
 
-            InputService service = new(eventBus, actions, subscribers);
+            InputService service = new(eventBus, actions, subscribersContainer);
             return service;
         }
 
@@ -35,19 +36,20 @@ namespace Warm.Project.Infrastructure.Factory
             container.SubscribePerformed(INPUT_KEY_MOVEMENT, actions.Player.Move, OnInputMovement);
             container.SubscribeCanceled(INPUT_KEY_MOVEMENT, actions.Player.Move, OnInputMovement);
 
+            container.SubscribePerformed(INPUT_KEY_INTERACT, actions.Player.Interact, OnInteract);
+
             void OnInputMovement(InputAction.CallbackContext context)
             {
                 var value = context.ReadValue<Vector2>();
                 eventBus.RaiseEvent<IPlayerMovementHandler>(h => h.HandleMovement(value));
             }
 
+            void OnInteract(InputAction.CallbackContext context)
+            {
+                eventBus.RaiseEvent<IPlayerInteractionHandler>(h => h.HandleInteraction());
+            }
+
             return container;
-        }
-
-
-        private void OnMovementHandler(InputAction.CallbackContext context)
-        {
-            throw new NotImplementedException();
         }
     }
 }
